@@ -1,0 +1,19 @@
+{
+  "name": "battleships-online",
+  "version": "1.0.0",
+  "description": "2 player online battleships game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RaveenP-glitch/battleships-online.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RaveenP-glitch/battleships-online/issues"
+  },
+  "homepage": "https://github.com/RaveenP-glitch/battleships-online#readme"
+}
