@@ -1,19 +1,51 @@
 {
   "name": "battleships-online",
   "version": "1.0.0",
-  "description": "2 player online battleships game",
-  "main": "index.js",
+  "description": "A full-stack 2-player turn-based Battleships game",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "cd frontend && npm run start",
+    "start:backend": "cd backend && npm run start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "clean": "rm -rf node_modules frontend/node_modules backend/node_modules",
+    "docker:up": "docker-compose up",
+    "docker:down": "docker-compose down",
+    "db:up": "docker-compose up -d postgres",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RaveenP-glitch/battleships-online.git"
+    "url": "git+https://github.com/your-username/battleships-online.git"
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/RaveenP-glitch/battleships-online/issues"
-  },
-  "homepage": "https://github.com/RaveenP-glitch/battleships-online#readme"
-}
+  "keywords": [
+    "battleships",
+    "game",
+    "multiplayer",
+    "nextjs",
+    "express",
+    "typescript",
+    "postgresql",
+    "prisma"
+  ],
+  "author": "Raveen Panditha",
+  "license": "MIT"
+} 
