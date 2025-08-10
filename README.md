@@ -2,7 +2,7 @@
 
 A full-stack, real-time multiplayer Battleships game built with modern web technologies. Players can create games, place ships strategically, and engage in turn-based naval combat with beautiful animations and real-time notifications.
 
-![Game Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)
+![Game Status](https://img.shields.io/badge/Status-Development%20Ready-blue)
 ![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014-blue)
 ![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-green)
 ![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2B%20Prisma-purple)
@@ -294,24 +294,8 @@ npm run clean && npm run install:all
 - **Rate Limiting** - API endpoint protection
 - **Error Handling** - Secure error messages
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Classic Battleships game rules and design
-- Modern web development best practices
-- Open source community tools and libraries
-
----
-
-**Built with ❤️ for strategic naval combat enthusiasts!** ⚓
