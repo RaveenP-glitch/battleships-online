@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'Battleships Online - 2-Player Naval Strategy Game',
   description: 'Play the classic Battleships game online with friends. Strategic turn-based naval combat in your browser.',
   keywords: ['battleships', 'online game', 'multiplayer', 'strategy', 'naval', 'turn-based'],
-  authors: [{ name: 'Your Name' }],
+  authors: [{ name: 'Raveen Panditha' }],
   viewport: 'width=device-width, initial-scale=1',
   themeColor: '#0ea5e9',
   openGraph: {
@@ -31,7 +31,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning={true}>
         <main>{children}</main>
       </body>
     </html>
