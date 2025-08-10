@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckCircle, X, Ship, Target, Trophy, Skull } from 'lucide-react';
 
 interface Notification {
@@ -18,16 +18,39 @@ interface GameNotificationsProps {
 }
 
 export default function GameNotifications({ notifications, onDismiss }: GameNotificationsProps) {
+  const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
   useEffect(() => {
-    notifications.forEach(notification => {
-      if (!notification.persistent && notification.duration !== 0) {
-        const duration = notification.duration || 5000;
-        const timer = setTimeout(() => {
-          onDismiss(notification.id);
-        }, duration);
-        return () => clearTimeout(timer);
+    const timers = timersRef.current;
+    const currentNotificationIds = new Set(notifications.map(n => n.id));
+    
+    // Clean up timers for notifications that no longer exist
+    timers.forEach((timer: NodeJS.Timeout, id: string) => {
+      if (!currentNotificationIds.has(id)) {
+        clearTimeout(timer);
+        timers.delete(id);
       }
     });
+
+    // Create timers for new notifications
+    notifications.forEach(notification => {
+      if (!notification.persistent && 
+          notification.duration !== 0 && 
+          !timers.has(notification.id)) {
+        const duration = notification.duration || 3000;
+        const timer = setTimeout(() => {
+          onDismiss(notification.id);
+          timers.delete(notification.id);
+        }, duration);
+        timers.set(notification.id, timer);
+      }
+    });
+
+    // Cleanup all timers on unmount
+    return () => {
+      timers.forEach((timer: NodeJS.Timeout) => clearTimeout(timer));
+      timers.clear();
+    };
   }, [notifications, onDismiss]);
 
   const getNotificationIcon = (type: string) => {
@@ -102,7 +125,12 @@ export function useGameNotifications() {
 
   const addNotification = (notification: Omit<Notification, 'id'>) => {
     const id = `notification-${Date.now()}-${Math.random()}`;
-    setNotifications(prev => [...prev, { ...notification, id }]);
+    const notificationWithDefaults = {
+      ...notification,
+      id,
+      duration: notification.duration ?? 5000 // Default to 5 seconds if not specified
+    };
+    setNotifications(prev => [...prev, notificationWithDefaults]);
   };
 
   const removeNotification = (id: string) => {
