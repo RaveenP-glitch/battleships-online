@@ -1,0 +1,561 @@
+{
+  "info": {
+    "name": "🚢 Battleships Online API",
+    "description": "Complete API collection for testing the Battleships Online game backend.\n\n## 🎯 Game Flow Overview\n1. **Health Check** - Verify API is running\n2. **Create Game** - Player 1 creates a new game\n3. **Join Game** - Player 2 joins the game\n4. **Place Ships** - Both players place their ships\n5. **Battle Phase** - Players take turns attacking\n6. **Game Status** - Check current game state\n\n## 🔧 Setup Instructions\n1. Ensure backend is running on `http://localhost:3001`\n2. Set environment variables in Postman:\n   - `baseUrl`: http://localhost:3001\n   - `gameId`: (will be set automatically)\n   - `player1Id`: (will be set automatically)\n   - `player2Id`: (will be set automatically)\n\n## 📋 Testing Strategy\n- Run requests in order for complete game flow\n- Use the \"Run Collection\" feature for automated testing\n- Check response status codes and data structure\n- Validate game logic and state transitions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "battleships-api",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Health check returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains status', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson).to.have.property('status');",
+              "    pm.expect(responseJson.status).to.eql('OK');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "**Health Check Endpoint**\n\nVerifies that the backend API is running and accessible.\n\n### Expected Response\n```json\n{\n  \"status\": \"OK\",\n  \"timestamp\": \"2024-01-01T12:00:00.000Z\",\n  \"uptime\": 123.456\n}\n```\n\n### Use Cases\n- API health monitoring\n- Deployment verification\n- Load balancer health checks"
+      },
+      "response": []
+    },
+    {
+      "name": "🎮 Create New Game",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Game creation returns 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response contains game data', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data).to.have.property('gameId');",
+              "    pm.expect(responseJson.data).to.have.property('playerId');",
+              "    ",
+              "    // Store for subsequent requests",
+              "    pm.environment.set('gameId', responseJson.data.gameId);",
+              "    pm.environment.set('player1Id', responseJson.data.playerId);",
+              "});",
+              "",
+              "pm.test('Game has correct initial status', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.data.status).to.eql('WAITING_FOR_PLAYER');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerName\": \"Admiral Nelson\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games"]
+        },
+        "description": "**Create New Game**\n\nCreates a new Battleships game and adds the first player.\n\n### Request Body\n```json\n{\n  \"playerName\": \"string\" // Required: Name of the first player\n}\n```\n\n### Expected Response (201)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"gameId\": \"clx1234567890\",\n    \"playerId\": \"clx0987654321\",\n    \"status\": \"WAITING_FOR_PLAYER\",\n    \"playerName\": \"Admiral Nelson\"\n  }\n}\n```\n\n### Game States\n- **WAITING_FOR_PLAYER**: Game created, waiting for second player\n- **PLACING_SHIPS**: Both players joined, placing ships\n- **IN_PROGRESS**: Battle phase active\n- **COMPLETED**: Game finished with winner\n\n### Error Cases\n- 400: Missing or invalid playerName\n- 500: Database or server error"
+      },
+      "response": []
+    },
+    {
+      "name": "🤝 Join Existing Game",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Join game returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains player data', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data).to.have.property('playerId');",
+              "    ",
+              "    // Store player 2 ID",
+              "    pm.environment.set('player2Id', responseJson.data.playerId);",
+              "});",
+              "",
+              "pm.test('Game status updated to PLACING_SHIPS', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.data.status).to.eql('PLACING_SHIPS');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerName\": \"Captain Hook\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}/join",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}", "join"]
+        },
+        "description": "**Join Existing Game**\n\nAdds a second player to an existing game.\n\n### Request Body\n```json\n{\n  \"playerName\": \"string\" // Required: Name of the second player\n}\n```\n\n### Expected Response (200)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"playerId\": \"clx1111111111\",\n    \"status\": \"PLACING_SHIPS\",\n    \"message\": \"Successfully joined the game\"\n  }\n}\n```\n\n### Business Logic\n- Game status changes from `WAITING_FOR_PLAYER` to `PLACING_SHIPS`\n- Both players can now place their ships\n- Game becomes ready for the setup phase\n\n### Error Cases\n- 400: Missing playerName or invalid gameId\n- 404: Game not found\n- 409: Game already has 2 players\n- 500: Database or server error"
+      },
+      "response": []
+    },
+    {
+      "name": "📊 Get Game Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Get game status returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains complete game data', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data).to.have.property('id');",
+              "    pm.expect(responseJson.data).to.have.property('status');",
+              "    pm.expect(responseJson.data).to.have.property('player1');",
+              "    pm.expect(responseJson.data).to.have.property('player2');",
+              "});",
+              "",
+              "pm.test('Players have required properties', function () {",
+              "    const responseJson = pm.response.json();",
+              "    const player1 = responseJson.data.player1;",
+              "    pm.expect(player1).to.have.property('id');",
+              "    pm.expect(player1).to.have.property('name');",
+              "    pm.expect(player1).to.have.property('ships');",
+              "    pm.expect(player1).to.have.property('moves');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}"]
+        },
+        "description": "**Get Game Status**\n\nRetrieves the complete current state of a game.\n\n### Expected Response (200)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"clx1234567890\",\n    \"status\": \"PLACING_SHIPS\",\n    \"currentTurn\": \"clx0987654321\",\n    \"winner\": null,\n    \"createdAt\": \"2024-01-01T12:00:00.000Z\",\n    \"player1\": {\n      \"id\": \"clx0987654321\",\n      \"name\": \"Admiral Nelson\",\n      \"ships\": [],\n      \"moves\": []\n    },\n    \"player2\": {\n      \"id\": \"clx1111111111\",\n      \"name\": \"Captain Hook\",\n      \"ships\": [],\n      \"moves\": []\n    }\n  }\n}\n```\n\n### Game Data Structure\n- **id**: Unique game identifier\n- **status**: Current game phase\n- **currentTurn**: ID of player whose turn it is\n- **winner**: ID of winning player (null if game ongoing)\n- **player1/player2**: Complete player data with ships and moves\n\n### Use Cases\n- Frontend state synchronization\n- Game state debugging\n- Real-time updates verification\n- Turn validation\n\n### Error Cases\n- 400: Invalid gameId format\n- 404: Game not found\n- 500: Database or server error"
+      },
+      "response": []
+    },
+    {
+      "name": "🚢 Place Ships - Player 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Ship placement returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Ships placed successfully', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.message).to.include('Ships placed successfully');",
+              "});",
+              "",
+              "pm.test('Response contains ship data', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.data).to.have.property('ships');",
+              "    pm.expect(responseJson.data.ships).to.be.an('array');",
+              "    pm.expect(responseJson.data.ships).to.have.lengthOf(3);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerId\": \"{{player1Id}}\",\n  \"ships\": [\n    {\n      \"type\": \"BATTLESHIP\",\n      \"startX\": 0,\n      \"startY\": 0,\n      \"direction\": \"HORIZONTAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 2,\n      \"startY\": 2,\n      \"direction\": \"VERTICAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 5,\n      \"startY\": 5,\n      \"direction\": \"HORIZONTAL\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}/ships",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}", "ships"]
+        },
+        "description": "**Place Ships**\n\nPlaces all ships for a player on their game board.\n\n### Request Body\n```json\n{\n  \"playerId\": \"string\", // Required: Player's unique ID\n  \"ships\": [\n    {\n      \"type\": \"BATTLESHIP|DESTROYER\", // Ship type\n      \"startX\": 0-9, // Starting X coordinate\n      \"startY\": 0-9, // Starting Y coordinate\n      \"direction\": \"HORIZONTAL|VERTICAL\" // Ship orientation\n    }\n  ]\n}\n```\n\n### Ship Requirements\n- **1 Battleship**: Length 4 cells\n- **2 Destroyers**: Length 3 cells each\n- Ships cannot overlap\n- Ships cannot extend beyond 10x10 grid\n- Ships cannot be adjacent (must have 1 cell gap)\n\n### Expected Response (200)\n```json\n{\n  \"success\": true,\n  \"message\": \"Ships placed successfully\",\n  \"data\": {\n    \"ships\": [\n      {\n        \"id\": \"ship_id_1\",\n        \"type\": \"BATTLESHIP\",\n        \"startX\": 0,\n        \"startY\": 0,\n        \"direction\": \"HORIZONTAL\",\n        \"sunk\": false\n      }\n    ]\n  }\n}\n```\n\n### Validation Rules\n1. **Boundary Check**: Ships must fit within 10x10 grid\n2. **Overlap Check**: No two ships can occupy same cells\n3. **Adjacent Check**: Ships must have at least 1 empty cell between them\n4. **Count Check**: Exactly 1 Battleship and 2 Destroyers\n5. **Format Check**: Valid coordinates and directions\n\n### Error Cases\n- 400: Invalid ship placement, missing data, or validation failure\n- 404: Game or player not found\n- 409: Ships already placed for this player\n- 500: Database or server error"
+      },
+      "response": []
+    },
+    {
+      "name": "🚢 Place Ships - Player 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Ship placement returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Ships placed successfully', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "});",
+              "",
+              "pm.test('Game status should change to IN_PROGRESS', function () {",
+              "    // This will be verified in the next request",
+              "    // Game status changes when both players have placed ships",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerId\": \"{{player2Id}}\",\n  \"ships\": [\n    {\n      \"type\": \"BATTLESHIP\",\n      \"startX\": 6,\n      \"startY\": 1,\n      \"direction\": \"VERTICAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 1,\n      \"startY\": 8,\n      \"direction\": \"HORIZONTAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 8,\n      \"startY\": 6,\n      \"direction\": \"VERTICAL\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}/ships",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}", "ships"]
+        },
+        "description": "**Place Ships - Player 2**\n\nPlaces ships for the second player. Once both players have placed ships, the game status changes to `IN_PROGRESS` and the battle phase begins.\n\n### Ship Placement Strategy\nThis example shows a different placement strategy:\n- Battleship placed vertically\n- Destroyers in different orientations\n- Strategic positioning for gameplay\n\n### Game Flow After Both Players Place Ships\n1. Game status → `IN_PROGRESS`\n2. `currentTurn` set to first player\n3. Battle phase begins\n4. Players can start attacking\n\n### Alternative Ship Configurations\n```json\n// Defensive corner strategy\n{\n  \"ships\": [\n    {\n      \"type\": \"BATTLESHIP\",\n      \"startX\": 0,\n      \"startY\": 9,\n      \"direction\": \"HORIZONTAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 9,\n      \"startY\": 0,\n      \"direction\": \"VERTICAL\"\n    },\n    {\n      \"type\": \"DESTROYER\",\n      \"startX\": 5,\n      \"startY\": 5,\n      \"direction\": \"HORIZONTAL\"\n    }\n  ]\n}\n```"
+      },
+      "response": []
+    },
+    {
+      "name": "💥 Attack - Player 1 Turn",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Attack returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Attack result is valid', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data).to.have.property('result');",
+              "    pm.expect(['HIT', 'MISS', 'SUNK']).to.include(responseJson.data.result);",
+              "});",
+              "",
+              "pm.test('Response contains attack coordinates', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.data).to.have.property('x');",
+              "    pm.expect(responseJson.data).to.have.property('y');",
+              "    pm.expect(responseJson.data.x).to.eql(6);",
+              "    pm.expect(responseJson.data.y).to.eql(1);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerId\": \"{{player1Id}}\",\n  \"x\": 6,\n  \"y\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}/attack",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}", "attack"]
+        },
+        "description": "**Attack Opponent**\n\nPlayer attacks a coordinate on the opponent's grid.\n\n### Request Body\n```json\n{\n  \"playerId\": \"string\", // Required: Attacking player's ID\n  \"x\": 0-9, // Required: X coordinate to attack\n  \"y\": 0-9  // Required: Y coordinate to attack\n}\n```\n\n### Expected Response (200)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"result\": \"HIT|MISS|SUNK\",\n    \"x\": 6,\n    \"y\": 1,\n    \"sunkShip\": {\n      \"type\": \"BATTLESHIP\",\n      \"startX\": 6,\n      \"startY\": 1,\n      \"direction\": \"VERTICAL\"\n    }, // Only present if result is SUNK\n    \"gameStatus\": \"IN_PROGRESS|COMPLETED\",\n    \"winner\": null // Player ID if game is won\n  }\n}\n```\n\n### Attack Results\n- **HIT** 💥: Attack hit part of an enemy ship\n- **MISS** 💧: Attack hit empty water\n- **SUNK** 💀: Attack hit and sank an entire ship\n\n### Game Logic\n1. Validate it's the player's turn\n2. Check coordinate hasn't been attacked before\n3. Determine if attack hits a ship\n4. Update ship status if hit\n5. Check if ship is completely sunk\n6. Check win condition (all enemy ships sunk)\n7. Switch turns if game continues\n\n### Strategic Attack Coordinates\n- (6,1) - Targeting Player 2's Battleship start\n- (1,8) - Targeting Player 2's Destroyer\n- (8,6) - Targeting Player 2's other Destroyer\n\n### Error Cases\n- 400: Invalid coordinates, not player's turn, or coordinate already attacked\n- 404: Game or player not found\n- 409: Game not in IN_PROGRESS status\n- 500: Database or server error"
+      },
+      "response": []
+    },
+    {
+      "name": "💥 Attack - Player 2 Turn",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Attack returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Attack result is valid', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(['HIT', 'MISS', 'SUNK']).to.include(responseJson.data.result);",
+              "});",
+              "",
+              "pm.test('Turn switches back to player 1', function () {",
+              "    // Turn should switch after successful attack",
+              "    // This will be verified in subsequent game status check",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerId\": \"{{player2Id}}\",\n  \"x\": 0,\n  \"y\": 0\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}/attack",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}", "attack"]
+        },
+        "description": "**Counter Attack - Player 2**\n\nPlayer 2 attacks Player 1's grid in response.\n\n### Attack Strategy\nTargeting (0,0) where Player 1 placed their Battleship horizontally.\n\n### Turn-Based Mechanics\n1. Only the current player can attack\n2. Turn switches after each valid attack\n3. Game continues until all ships of one player are sunk\n4. Winner is determined when opponent has no remaining ships\n\n### Multiple Attack Scenarios\nYou can test different attack patterns:\n\n**Systematic Search Pattern:**\n```json\n// Attack in grid pattern\n{ \"x\": 0, \"y\": 0 }, // Top-left corner\n{ \"x\": 2, \"y\": 2 }, // Center-left area\n{ \"x\": 5, \"y\": 5 }, // Center-right area\n{ \"x\": 9, \"y\": 9 }  // Bottom-right corner\n```\n\n**Random Attack Pattern:**\n```json\n// Unpredictable attacks\n{ \"x\": 3, \"y\": 7 },\n{ \"x\": 8, \"y\": 2 },\n{ \"x\": 1, \"y\": 9 }\n```\n\n### Expected Outcomes\n- If hit: Continue attacking nearby cells\n- If miss: Try different area\n- If sunk: Celebrate and find next ship"
+      },
+      "response": []
+    },
+    {
+      "name": "👤 Get Player Info - Player 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Get player returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Player data is complete', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data).to.have.property('id');",
+              "    pm.expect(responseJson.data).to.have.property('name');",
+              "    pm.expect(responseJson.data.name).to.eql('Admiral Nelson');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/players/{{player1Id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "players", "{{player1Id}}"]
+        },
+        "description": "**Get Player Information**\n\nRetrieves detailed information about a specific player.\n\n### Expected Response (200)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"clx0987654321\",\n    \"name\": \"Admiral Nelson\",\n    \"createdAt\": \"2024-01-01T12:00:00.000Z\"\n  }\n}\n```\n\n### Use Cases\n- Player profile display\n- Authentication verification\n- Game history tracking\n- Leaderboard systems\n\n### Error Cases\n- 400: Invalid player ID format\n- 404: Player not found\n- 500: Database or server error\n\n### Player Management\nThis endpoint is useful for:\n- Verifying player existence\n- Getting player display names\n- Managing player sessions\n- Building player statistics"
+      },
+      "response": []
+    },
+    {
+      "name": "👤 Get Player Info - Player 2",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Get player returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Player 2 data is correct', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    pm.expect(responseJson.data.name).to.eql('Captain Hook');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/players/{{player2Id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "players", "{{player2Id}}"]
+        },
+        "description": "**Get Player 2 Information**\n\nRetrieves information for the second player in the game.\n\n### Player Comparison\nUse both player endpoints to compare:\n- Player names and IDs\n- Join timestamps\n- Game participation\n\n### Batch Player Requests\nYou can run both player requests in parallel to get complete player information for game display."
+      },
+      "response": []
+    },
+    {
+      "name": "📊 Final Game Status Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Final status check returns 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Game has progressed with moves', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.success).to.be.true;",
+              "    ",
+              "    // Check that moves have been recorded",
+              "    const player1Moves = responseJson.data.player1.moves;",
+              "    const player2Moves = responseJson.data.player2.moves;",
+              "    ",
+              "    pm.expect(player1Moves.length).to.be.at.least(1);",
+              "    pm.expect(player2Moves.length).to.be.at.least(1);",
+              "});",
+              "",
+              "pm.test('Ships are placed for both players', function () {",
+              "    const responseJson = pm.response.json();",
+              "    pm.expect(responseJson.data.player1.ships).to.have.lengthOf(3);",
+              "    pm.expect(responseJson.data.player2.ships).to.have.lengthOf(3);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/games/{{gameId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1", "games", "{{gameId}}"]
+        },
+        "description": "**Final Game Status Check**\n\nVerifies the complete game state after ship placement and attacks.\n\n### What to Verify\n1. **Game Progression**: Status should be `IN_PROGRESS` or `COMPLETED`\n2. **Ship Placement**: Both players should have 3 ships each\n3. **Move History**: Attack moves should be recorded\n4. **Turn Management**: Current turn should be set correctly\n5. **Win Condition**: Check if game has ended with a winner\n\n### Game Analysis\nUse this endpoint to analyze:\n- **Battle Progress**: Number of hits vs misses\n- **Ship Status**: Which ships are damaged or sunk\n- **Strategic Patterns**: Attack patterns and effectiveness\n- **Game Duration**: Time taken for game completion\n\n### Complete Game Data Structure\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"game_id\",\n    \"status\": \"IN_PROGRESS\",\n    \"currentTurn\": \"player_id\",\n    \"winner\": null,\n    \"player1\": {\n      \"id\": \"player1_id\",\n      \"name\": \"Admiral Nelson\",\n      \"ships\": [\n        {\n          \"id\": \"ship_id\",\n          \"type\": \"BATTLESHIP\",\n          \"startX\": 0,\n          \"startY\": 0,\n          \"direction\": \"HORIZONTAL\",\n          \"sunk\": false\n        }\n      ],\n      \"moves\": [\n        {\n          \"id\": \"move_id\",\n          \"x\": 6,\n          \"y\": 1,\n          \"result\": \"HIT\",\n          \"createdAt\": \"2024-01-01T12:00:00.000Z\"\n        }\n      ]\n    },\n    \"player2\": {\n      // Similar structure\n    }\n  }\n}\n```"
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default base URL if not already set",
+          "if (!pm.environment.get('baseUrl')) {",
+          "    pm.environment.set('baseUrl', 'http://localhost:3001');",
+          "}",
+          "",
+          "// Log current request for debugging",
+          "console.log('Making request to:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to check response time",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Global test to check response format",
+          "pm.test('Response is JSON', function () {",
+          "    pm.response.to.be.json;",
+          "});",
+          "",
+          "// Log response for debugging",
+          "console.log('Response status:', pm.response.status);",
+          "console.log('Response body:', pm.response.text());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "gameId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "player1Id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "player2Id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+} 
