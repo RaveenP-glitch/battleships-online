@@ -44,6 +44,7 @@ A full-stack, real-time multiplayer Battleships game built with modern web techn
 - **Health Monitoring** - API health checks and status endpoints
 - **Development Tools** - Hot reloading, linting, and debugging support
 - **Production Ready** - Optimized builds and deployment configurations
+- **Real-time Updates** - HTTP polling for game state synchronization (2-second intervals)
 
 ## 🏗️ Tech Stack
 
@@ -60,9 +61,9 @@ A full-stack, real-time multiplayer Battleships game built with modern web techn
 - **Runtime**: Node.js 18+ with Express.js framework
 - **Language**: TypeScript with strict type checking
 - **Database**: PostgreSQL 15 with Prisma ORM
-- **Real-time**: Socket.IO for multiplayer communication
-- **Authentication**: JWT tokens and session management
-- **Security**: Helmet, CORS, input validation with Joi
+- **Real-time**: Socket.IO server implemented (client not connected)
+- **Authentication**: JWT infrastructure ready (not implemented)
+- **Security**: Helmet, CORS, basic input validation
 - **Logging**: Morgan HTTP request logger
 - **Development**: Nodemon with ts-node and path mapping
 
